@@ -20,21 +20,19 @@ userResProducer.connect();
 export let userHandler = {};
 
 userHandler.register = async (id, params, body) => {
-  // const requestId = Math.random().toString(36).substr(2);
-  // responses[requestId] = res;
-  producer.send({
-    topic: "users_request",
-    messages: [
-      {
-        value: JSON.stringify({
-          id: requestId,
-          action: "register",
-          params: req.params,
-          body: body,
-        }),
-      },
-    ],
-  });
+  // producer.send({
+  //   topic: "users_response",
+  //   messages: [
+  //     {
+  //       value: JSON.stringify({
+  //         id: requestId,
+  //         action: "register",
+  //         params: req.params,
+  //         body: body,
+  //       }),
+  //     },
+  //   ],
+  // });
   const { firstName, lastName, email, password } = body;
   try {
     // See if user exists
@@ -96,12 +94,36 @@ userHandler.register = async (id, params, body) => {
 // @route GET api/user/login
 // @desc login page
 // @access Private
-userHandler.loadUser = (id, params, body) => {
+userHandler.loadUser = (id, params, body, user) => {
   try {
-    res.json(req.user);
+    // res.json(req.user);
+    userResProducer.send({
+      topic: "users_response",
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            status: 200,
+            data: user,
+          }),
+        },
+      ],
+    });
   } catch (error) {
     console.error(error.message);
-    res.status(500).send("Server Error");
+    // res.status(500).send("Server Error");
+    userResProducer.send({
+      topic: "users_response",
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            status: 500,
+            data: "Server error",
+          }),
+        },
+      ],
+    });
   }
 };
 
@@ -114,11 +136,30 @@ userHandler.login = async (id, params, body) => {
   try {
     const user = await User.findOne({ email }, { password: 1 });
     if (!user) {
-      return res.status(400).json({
-        errors: [
+      // return res.status(400).json({
+      //   errors: [
+      //     {
+      //       msg:
+      //         "Whoops! We couldn’t find an account for that email address and password",
+      //     },
+      //   ],
+      // });
+      userResProducer.send({
+        topic: "users_response",
+        messages: [
           {
-            msg:
-              "Whoops! We couldn’t find an account for that email address and password",
+            value: JSON.stringify({
+              id,
+              status: 400,
+              data: {
+                errors: [
+                  {
+                    msg:
+                      "Whoops! We couldn’t find an account for that email address and password",
+                  },
+                ],
+              },
+            }),
           },
         ],
       });
@@ -128,11 +169,30 @@ userHandler.login = async (id, params, body) => {
     const matchPwd = await bcrypt.compare(password, user.password);
 
     if (!matchPwd) {
-      return res.status(400).json({
-        errors: [
+      // return res.status(400).json({
+      //   errors: [
+      //     {
+      //       msg:
+      //         "Whoops! We couldn’t find an account for that email address and password",
+      //     },
+      //   ],
+      // });
+      userResProducer.send({
+        topic: "users_response",
+        messages: [
           {
-            msg:
-              "Whoops! We couldn’t find an account for that email address and password",
+            value: JSON.stringify({
+              id,
+              status: 400,
+              data: {
+                errors: [
+                  {
+                    msg:
+                      "Whoops! We couldn’t find an account for that email address and password",
+                  },
+                ],
+              },
+            }),
           },
         ],
       });
@@ -152,18 +212,42 @@ userHandler.login = async (id, params, body) => {
       { expiresIn: 360000 },
       (err, token) => {
         if (err) throw err;
-        res.json({ token: `Bearer ${token}` });
+        // res.json({ token: `Bearer ${token}` });
+        userResProducer.send({
+          topic: "users_response",
+          messages: [
+            {
+              value: JSON.stringify({
+                id,
+                status: 200,
+                data: { token: `Bearer ${token}` },
+              }),
+            },
+          ],
+        });
       }
     );
   } catch (error) {
-    res.status(500).send("Server error");
+    // res.status(500).send("Server error");
+    userResProducer.send({
+      topic: "users_response",
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            status: 500,
+            data: "Server error",
+          }),
+        },
+      ],
+    });
   }
 };
 
 // @route PUT api/user/me
 // @desc Update profile
 // @access Private
-userHandler.updateProfile = async (id, params, body) => {
+userHandler.updateProfile = async (id, params, body, user, file) => {
   const {
     firstName,
     lastName,
@@ -176,7 +260,7 @@ userHandler.updateProfile = async (id, params, body) => {
   } = body;
 
   try {
-    const userFound = await User.findById(req.user.id);
+    const userFound = await User.findById(user.id);
     const userFields = {};
     if (firstName && userFound.firstName !== firstName) {
       userFields.firstName = firstName;
@@ -205,10 +289,28 @@ userHandler.updateProfile = async (id, params, body) => {
       );
 
       if (!matchPwd) {
-        return res.status(401).json({
-          errors: [
+        // return res.status(401).json({
+        //   errors: [
+        //     {
+        //       msg: "Incorrect Password",
+        //     },
+        //   ],
+        // });
+        userResProducer.send({
+          topic: "users_response",
+          messages: [
             {
-              msg: "Incorrect Password",
+              value: JSON.stringify({
+                id,
+                status: 401,
+                data: {
+                  errors: [
+                    {
+                      msg: "Incorrect Password",
+                    },
+                  ],
+                },
+              }),
             },
           ],
         });
@@ -217,14 +319,14 @@ userHandler.updateProfile = async (id, params, body) => {
       const salt = await bcrypt.genSalt(10);
       userFields.password = await bcrypt.hash(newPassword, salt);
     }
-    if (req.file) {
-      const myFile = req.file.originalname.split(".");
+    if (file) {
+      const myFile = file.originalname.split(".");
       const fileType = myFile[myFile.length - 1];
 
       const params = {
         Bucket: process.env.AWS_BUCKET_NAME,
         Key: `${uuid()}.${fileType}`,
-        Body: req.file.buffer,
+        Body: file.buffer,
       };
       const data = await S3.upload(params).promise();
 
@@ -232,7 +334,7 @@ userHandler.updateProfile = async (id, params, body) => {
     }
     if (userFound) {
       const updatedUser = await User.findByIdAndUpdate(
-        req.user.id,
+        user.id,
         {
           $set: userFields,
         },
@@ -242,11 +344,35 @@ userHandler.updateProfile = async (id, params, body) => {
         }
       );
 
-      res.json(updatedUser);
+      // res.json(updatedUser);
+      userResProducer.send({
+        topic: "users_response",
+        messages: [
+          {
+            value: JSON.stringify({
+              id,
+              status: 200,
+              data: updatedUser,
+            }),
+          },
+        ],
+      });
     }
   } catch (error) {
     console.log(error);
-    res.status(500).send("Server error");
+    // res.status(500).send("Server error");
+    userResProducer.send({
+      topic: "users_response",
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            status: 500,
+            data: "Server error",
+          }),
+        },
+      ],
+    });
   }
 };
 
@@ -255,14 +381,38 @@ userHandler.updateProfile = async (id, params, body) => {
 // @access Public
 userHandler.getProfileByUserId = async (id, params, body) => {
   try {
-    const profile = await User.findById(req.params.user_id, {
+    const profile = await User.findById(params.user_id, {
       password: 0,
       date: 0,
       messages: 0,
     });
-    res.json(profile);
+    // res.json(profile);
+    userResProducer.send({
+      topic: "users_response",
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            status: 200,
+            data: profile,
+          }),
+        },
+      ],
+    });
   } catch (error) {
     console.error(error.message);
-    res.status(500).send("Server Error");
+    // res.status(500).send("Server Error");
+    userResProducer.send({
+      topic: "users_response",
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            status: 500,
+            data: "Server error",
+          }),
+        },
+      ],
+    });
   }
 };
