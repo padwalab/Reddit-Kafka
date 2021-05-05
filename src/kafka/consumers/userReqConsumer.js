@@ -2,7 +2,7 @@ import { kafka } from "../kafka.js";
 import { userHandler } from "../../handlers/userHandler.js";
 
 export const userReqConsumer = kafka.consumer({
-  groupId: "user-request-group",
+  groupId: "users-kafka-backend",
 });
 
 userReqConsumer.connect();
