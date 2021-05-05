@@ -11,7 +11,7 @@ class Database {
   }
   _connect() {
     mongoose
-      .connect(`mongodb://${server}/${database}`, {
+      .connect(`mongodb+srv://admin:Rrp5AYP7FfyUzefv@cluster0.wilwz.mongodb.net/Lab_2?retryWrites=true&w=majority`, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useCreateIndex: true,

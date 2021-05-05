@@ -20,6 +20,6 @@ const MessageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-});
+}, { versionKey: false, collection: 'message' });
 
 export default mongoose.model('message', MessageSchema);

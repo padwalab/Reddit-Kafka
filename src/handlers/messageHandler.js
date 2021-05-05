@@ -28,7 +28,7 @@ messageHandler.sendMessage = async (id, params, body, user) => {
       if (data) {
         data = JSON.parse(data);
         const updatedData = [...data, message];
-        redisClient.setex(user.id, 3000, JSON.stringify(updatedData));
+        redisClient.setex(user.id, 3, JSON.stringify(updatedData));
       }
       // If value for given key is not available in Redis
       else {
@@ -37,7 +37,7 @@ messageHandler.sendMessage = async (id, params, body, user) => {
           .populate("toUserId", "firstName")
           .populate("fromUserId", "firstName")
           .then((messages) => {
-            redisClient.setex(user.id, 3000, JSON.stringify(messages));
+            redisClient.setex(user.id, 3, JSON.stringify(messages));
           });
       }
     });
@@ -79,8 +79,8 @@ messageHandler.sendMessage = async (id, params, body, user) => {
 messageHandler.getMessages = async (id, params, user) => {
   try {
     const { userId } = params;
-
-    redisClient.get(user.id, async (err, data) => {
+    console.log(userId);
+    redisClient.get(userId, async (err, data) => {
       // If value for key is available in Redis
       if (data) {
         messageResProducer.send({
@@ -105,7 +105,7 @@ messageHandler.getMessages = async (id, params, user) => {
           .populate("fromUserId", "firstName")
           .then((messages) => {
             const msg = JSON.stringify(messages);
-            redisClient.setex(user.id, 36000, msg);
+            redisClient.setex(userId, 3, msg);
             // res.send(msg);
             messageResProducer.send({
               topic: "messages_response",
