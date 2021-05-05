@@ -16,6 +16,7 @@ class Database {
         useUnifiedTopology: true,
         useCreateIndex: true,
         useFindAndModify: false,
+        poolSize: 50,
       })
       .then(() => {
         console.log("Database connection successful");
