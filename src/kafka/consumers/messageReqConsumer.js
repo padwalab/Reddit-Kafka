@@ -17,7 +17,12 @@ messageReqConsumer.run({
         messageHandler.sendMessage(data.id, data.params, data.body, data.user);
         break;
       case "getMessages":
-        messageHandler.getMessages(data.id, data.params, data.user);
+        messageHandler.getMessages(
+          data.id,
+          data.topicName,
+          data.params,
+          data.user
+        );
         break;
     }
   },

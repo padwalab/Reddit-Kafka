@@ -76,15 +76,23 @@ messageHandler.sendMessage = async (id, params, body, user) => {
 // @route GET api/messages/
 // @desc get all conversation specific to a user
 // @access Private
-messageHandler.getMessages = async (id, params, user) => {
+messageHandler.getMessages = async (id, topicName, params, user) => {
   try {
     const { userId } = params;
     console.log(userId);
     redisClient.get(userId, async (err, data) => {
       // If value for key is available in Redis
       if (data) {
+        console.log(
+          JSON.stringify({
+            id,
+            topicName,
+            status: 200,
+            data: data,
+          })
+        );
         messageResProducer.send({
-          topic: "messages_response",
+          topic: topicName,
           messages: [
             {
               value: JSON.stringify({
@@ -107,8 +115,16 @@ messageHandler.getMessages = async (id, params, user) => {
             const msg = JSON.stringify(messages);
             redisClient.setex(userId, 3, msg);
             // res.send(msg);
+            console.log(
+              JSON.stringify({
+                id,
+                topicName,
+                status: 200,
+                data: msg,
+              })
+            );
             messageResProducer.send({
-              topic: "messages_response",
+              topic: topicName,
               messages: [
                 {
                   value: JSON.stringify({
@@ -124,8 +140,16 @@ messageHandler.getMessages = async (id, params, user) => {
     });
   } catch (error) {
     console.log(error);
+    console.log(
+      JSON.stringify({
+        id,
+        topicName,
+        status: 500,
+        data: "Server error",
+      })
+    );
     messageResProducer.send({
-      topic: "messages_response",
+      topic: topicName,
       messages: [
         {
           value: JSON.stringify({
