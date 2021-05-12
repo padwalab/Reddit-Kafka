@@ -12,8 +12,8 @@ export let messageHandler = {};
 // @access Private
 messageHandler.sendMessage = async (id, params, body, user) => {
   try {
-    const { toUserId, fromUserId, text } = body;
-    let message = new Message({ toUserId, fromUserId, text });
+    const { toUserId, text } = body;
+    let message = new Message({ toUserId, fromUserId: user.id, text });
     await message
       .save()
       .then((doc) =>
@@ -28,16 +28,46 @@ messageHandler.sendMessage = async (id, params, body, user) => {
       if (data) {
         data = JSON.parse(data);
         const updatedData = [...data, message];
-        redisClient.setex(user.id, 3, JSON.stringify(updatedData));
+        redisClient.setex(user.id, 3000, JSON.stringify(updatedData));
       }
       // If value for given key is not available in Redis
       else {
+        await Message.find({
+          $or: [{ toUserId: user.id }, { fromUserId: user.id }],
+        })
+          .populate("toUserId", "firstName")
+          .populate("fromUserId", "firstName")
+          .then((messages) => {
+            const msg = JSON.stringify(messages);
+            redisClient.setex(user.id, 36000, msg);
+          });
+      }
+    });
+
+    redisClient.get(toUserId, async (err, data) => {
+      // If value for key is available in Redis
+      if (data) {
+        data = JSON.parse(data);
+        const updatedData = [...data, message];
+        redisClient.setex(toUserId, 3000, JSON.stringify(updatedData));
+      }
+      // If value for given key is not available in Redis
+      else {
+        await Message.find({
+          $or: [{ toUserId }, { fromUserId: toUserId }],
+        })
+          .populate("toUserId", "firstName")
+          .populate("fromUserId", "firstName")
+          .then((messages) => {
+            const msg = JSON.stringify(messages);
+            redisClient.setex(toUserId, 36000, msg);
+          });
         await Message.find()
           .or([{ toUserId: user.id }, { fromUserId: user.id }])
           .populate("toUserId", "firstName")
           .populate("fromUserId", "firstName")
           .then((messages) => {
-            redisClient.setex(user.id, 3, JSON.stringify(messages));
+            redisClient.setex(user.id, 3000, JSON.stringify(messages));
           });
       }
     });
@@ -78,9 +108,7 @@ messageHandler.sendMessage = async (id, params, body, user) => {
 // @access Private
 messageHandler.getMessages = async (id, topicName, params, user) => {
   try {
-    const { userId } = params;
-    console.log(userId);
-    redisClient.get(userId, async (err, data) => {
+    redisClient.get(user.id, async (err, data) => {
       // If value for key is available in Redis
       if (data) {
         console.log(
@@ -107,14 +135,14 @@ messageHandler.getMessages = async (id, topicName, params, user) => {
       }
       // If value for given key is not available in Redis
       else {
-        await Message.find()
-          .or([{ toUserId: userId }, { fromUserId: userId }])
+        await Message.find({
+          $or: [{ toUserId: user.id }, { fromUserId: user.id }],
+        })
           .populate("toUserId", "firstName")
           .populate("fromUserId", "firstName")
           .then((messages) => {
             const msg = JSON.stringify(messages);
-            redisClient.setex(userId, 3, msg);
-            // res.send(msg);
+            redisClient.setex(user.id, 36000, msg);
             console.log(
               JSON.stringify({
                 id,
@@ -135,6 +163,7 @@ messageHandler.getMessages = async (id, topicName, params, user) => {
                 },
               ],
             });
+            // res.send(msg);
           });
       }
     });

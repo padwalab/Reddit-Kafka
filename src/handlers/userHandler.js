@@ -33,6 +33,7 @@ userHandler.register = async (id, params, body) => {
   //     },
   //   ],
   // });
+
   const { firstName, lastName, email, password } = body;
   try {
     // See if user exists
@@ -144,7 +145,7 @@ userHandler.login = async (id, params, body) => {
       //     },
       //   ],
       // });
-      userResProducer.send({
+      return userResProducer.send({
         topic: "users_response",
         messages: [
           {
@@ -154,8 +155,7 @@ userHandler.login = async (id, params, body) => {
               data: {
                 errors: [
                   {
-                    msg:
-                      "Whoops! We couldn’t find an account for that email address and password",
+                    msg: "Whoops! We couldn’t find an account for that email address and password",
                   },
                 ],
               },
@@ -169,15 +169,7 @@ userHandler.login = async (id, params, body) => {
     const matchPwd = await bcrypt.compare(password, user.password);
 
     if (!matchPwd) {
-      // return res.status(400).json({
-      //   errors: [
-      //     {
-      //       msg:
-      //         "Whoops! We couldn’t find an account for that email address and password",
-      //     },
-      //   ],
-      // });
-      userResProducer.send({
+      return userResProducer.send({
         topic: "users_response",
         messages: [
           {
@@ -187,8 +179,7 @@ userHandler.login = async (id, params, body) => {
               data: {
                 errors: [
                   {
-                    msg:
-                      "Whoops! We couldn’t find an account for that email address and password",
+                    msg: "Whoops! We couldn’t find an account for that email address and password",
                   },
                 ],
               },
@@ -271,16 +262,13 @@ userHandler.updateProfile = async (id, params, body, user, file) => {
     if (gender && userFound.gender !== gender) {
       userFields.gender = gender;
     }
-
     if (aboutMe && userFound.aboutMe !== aboutMe) {
       userFields.aboutMe = aboutMe;
     }
     if (location && userFound.location !== location) {
       userFields.location = location;
     }
-    if (topicList) {
-      userFields.topicList = topicList.split(",").map((skill) => skill.trim());
-    }
+
     if (currentPassword && newPassword) {
       // Compare password
       const matchPwd = await bcrypt.compare(
@@ -289,13 +277,6 @@ userHandler.updateProfile = async (id, params, body, user, file) => {
       );
 
       if (!matchPwd) {
-        // return res.status(401).json({
-        //   errors: [
-        //     {
-        //       msg: "Incorrect Password",
-        //     },
-        //   ],
-        // });
         userResProducer.send({
           topic: "users_response",
           messages: [
@@ -330,13 +311,14 @@ userHandler.updateProfile = async (id, params, body, user, file) => {
       };
       const data = await S3.upload(params).promise();
 
-      userFields.profilePicture = data.Location;
+      userFields.profilePicture = data.Key;
     }
     if (userFound) {
       const updatedUser = await User.findByIdAndUpdate(
         user.id,
         {
           $set: userFields,
+          $addToSet: { topicList: { $each: JSON.parse(topicList) } },
         },
         {
           select: { password: 0, date: 0, communities: 0, messages: 0 },
@@ -385,7 +367,7 @@ userHandler.getProfileByUserId = async (id, params, body) => {
       password: 0,
       date: 0,
       messages: 0,
-    });
+    }).populate({ path: "communities", select: ["communityName"] });
     // res.json(profile);
     userResProducer.send({
       topic: "users_response",

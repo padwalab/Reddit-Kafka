@@ -11,16 +11,12 @@ class Database {
   }
   _connect() {
     mongoose
-      .connect(
-        `mongodb+srv://admin:Rrp5AYP7FfyUzefv@cluster0.wilwz.mongodb.net/Lab_2?retryWrites=true&w=majority`,
-        {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-          useCreateIndex: true,
-          useFindAndModify: false,
-          poolSize: 50,
-        }
-      )
+      .connect(process.env.mongoURI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        useCreateIndex: true,
+        useFindAndModify: false,
+      })
       .then(() => {
         console.log("Database connection successful");
       })
