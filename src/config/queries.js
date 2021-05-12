@@ -84,11 +84,11 @@ sqlDB.insertComment = (postId, text, creatorId, parentId, creatorName) => {
                   if (err) {
                     return reject(err);
                   }
-                  return resolve(result3);
+                  return resolve(result);
                 }
               );
             } else {
-              return resolve(result2);
+              return resolve(result);
             }
           }
         );
@@ -371,17 +371,14 @@ sqlDB.getUpVotesforPost = async (postId) => {
   });
 };
 
-sqlDB.getRecentComment = async () => {
+sqlDB.getRecentComment = async (id) => {
   return new Promise((resolve, reject) => {
-    db.query(
-      `select * from comments where id=(SELECT LAST_INSERT_ID());`,
-      (err, result) => {
-        if (err) {
-          return reject(err);
-        }
-        return resolve(result);
+    db.query(`select * from comments where id=?;`, [id], (err, result) => {
+      if (err) {
+        return reject(err);
       }
-    );
+      return resolve(result);
+    });
   });
 };
 

@@ -1,5 +1,5 @@
 import { sqlDB } from "../config/queries.js";
-import _ from "lodash";
+// import _ from "lodash";
 import { commentResProducer } from "../kafka/producers/commentResProducer.js";
 import { commentReqConsumer } from "../kafka/consumers/commentReqConsumer.js";
 
@@ -21,7 +21,7 @@ commentHandler.addComment = async (id, params, body, user) => {
       user.firstName
     );
     if (result.affectedRows > 0) {
-      const comment = await sqlDB.getRecentComment();
+      const comment = await sqlDB.getRecentComment(result.insertId);
       commentResProducer.send({
         topic: "comment_response",
         messages: [

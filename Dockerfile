@@ -6,6 +6,7 @@ COPY package*.json ./
 
 RUN npm install kafkajs
 RUN npm install
+RUN npm install lodash
 # RUN npm install --save pg sequelize sequelize-cli
 
 # COPY . .
