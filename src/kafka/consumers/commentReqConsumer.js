@@ -20,7 +20,7 @@ commentReqConsumer.run({
         commentHandler.deleteComment(data.id, data.params, data.body);
         break;
       case "addVote":
-        commentHandler.addVote(data.id, data.params, data.body);
+        commentHandler.addVote(data.id, data.params, data.body, data.user);
         break;
       case "voteCount":
         commentHandler.voteCount(data.id, data.params, data.body, data.user);

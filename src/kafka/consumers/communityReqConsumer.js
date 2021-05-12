@@ -23,7 +23,12 @@ communityReqConsumer.run({
         );
         break;
       case "updateCommunity":
-        communityHandler.updateCommunity(data.id, data.params, data.body);
+        communityHandler.updateCommunity(
+          data.id,
+          data.params,
+          data.body,
+          data.files
+        );
         break;
       case "getAllMyCommunities":
         communityHandler.getAllMyCommunities(

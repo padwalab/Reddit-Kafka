@@ -1,13 +1,13 @@
-import { communityReqConsumer } from '../kafka/consumers/communityReqConsumer.js';
-import { communityResProducer } from '../kafka/producers/communityResProducer.js';
-import { sqlDB } from '../config/queries.js';
-import Community from '../models/Community.js';
-import dotenv from 'dotenv';
-import User from '../models/User.js';
-import { S3 } from '../config/s3.js';
-import uuid from 'uuid';
-import mongoose from 'mongoose';
-dotenv.config({ path: '.env' });
+import { communityReqConsumer } from "../kafka/consumers/communityReqConsumer.js";
+import { communityResProducer } from "../kafka/producers/communityResProducer.js";
+import { sqlDB } from "../config/queries.js";
+import Community from "../models/Community.js";
+import dotenv from "dotenv";
+import User from "../models/User.js";
+import { S3 } from "../config/s3.js";
+import uuid from "uuid";
+import mongoose from "mongoose";
+dotenv.config({ path: ".env" });
 
 communityResProducer.connect();
 
@@ -25,7 +25,7 @@ communityHandler.create = async (id, params, body, user, files) => {
       //   errors: [{ msg: `${communityName} community already exists.` }],
       // });
       return communityResProducer.send({
-        topic: 'community_response',
+        topic: "community_response",
         messages: [
           {
             value: JSON.stringify({
@@ -56,7 +56,7 @@ communityHandler.create = async (id, params, body, user, files) => {
       const files = files;
 
       const locationPromises = files.map(async (item) => {
-        let myFile = item.originalname.split('.');
+        let myFile = item.originalname.split(".");
         let fileType = myFile[myFile.length - 1];
         let params = {
           Bucket: process.env.AWS_BUCKET_NAME,
@@ -67,7 +67,7 @@ communityHandler.create = async (id, params, body, user, files) => {
         const resp = await S3.upload(params).promise();
         return resp.Key;
       });
-      const imageLinks = await Promise.all(locationPromises);
+      const simageLinks = await Promise.all(locationPromises);
       newCommunity.images = imageLinks;
     }
 
@@ -86,13 +86,13 @@ communityHandler.create = async (id, params, body, user, files) => {
       $addToSet: { communities: communityID },
     });
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 200,
-            data: 'Community createdd',
+            data: "Community createdd",
           }),
         },
       ],
@@ -101,13 +101,13 @@ communityHandler.create = async (id, params, body, user, files) => {
   } catch (error) {
     console.log(error);
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],
@@ -119,7 +119,7 @@ communityHandler.create = async (id, params, body, user, files) => {
 // @route PUT api/mycommunity/:community_id
 // @desc update community
 // @access Private
-communityHandler.updateCommunity = async (id, params, body) => {
+communityHandler.updateCommunity = async (id, params, body, files) => {
   const { description, rules } = body;
   const communityFields = {};
   if (description) {
@@ -131,11 +131,11 @@ communityHandler.updateCommunity = async (id, params, body) => {
   }
 
   let imageLinks;
-  if (req.files) {
-    const files = req.files;
+  if (files) {
+    const files = files;
 
     const locationPromises = files.map(async (item) => {
-      let myFile = item.originalname.split('.');
+      let myFile = item.originalname.split(".");
       let fileType = myFile[myFile.length - 1];
       let params = {
         Bucket: process.env.AWS_BUCKET_NAME,
@@ -155,13 +155,13 @@ communityHandler.updateCommunity = async (id, params, body) => {
       $addToSet: { images: { $each: imageLinks } },
     });
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 200,
-            data: 'Community updated',
+            data: "Community updated",
           }),
         },
       ],
@@ -170,13 +170,13 @@ communityHandler.updateCommunity = async (id, params, body) => {
   } catch (error) {
     console.log(error);
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],
@@ -210,7 +210,7 @@ communityHandler.getAllMyCommunities = async (id, params, body, user) => {
       };
     });
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
@@ -225,13 +225,13 @@ communityHandler.getAllMyCommunities = async (id, params, body, user) => {
   } catch (error) {
     console.log(error);
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],
@@ -251,13 +251,13 @@ communityHandler.deleteCommunity = async (id, params) => {
 
     await sqlDB.deletePosts(deletedCommunity.id);
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 200,
-            data: 'deleted',
+            data: "deleted",
           }),
         },
       ],
@@ -266,13 +266,13 @@ communityHandler.deleteCommunity = async (id, params) => {
   } catch (error) {
     console.log(error);
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],
@@ -302,7 +302,7 @@ communityHandler.addVote = async (id, params, body, user) => {
           function (err, community) {
             if (err) return console.log(err);
             communityResProducer.send({
-              topic: 'community_response',
+              topic: "community_response",
               messages: [
                 {
                   value: JSON.stringify({
@@ -324,7 +324,7 @@ communityHandler.addVote = async (id, params, body, user) => {
           function (err, community) {
             if (err) return console.log(err);
             communityResProducer.send({
-              topic: 'community_response',
+              topic: "community_response",
               messages: [
                 {
                   value: JSON.stringify({
@@ -342,13 +342,13 @@ communityHandler.addVote = async (id, params, body, user) => {
     } catch (error) {
       console.log(error);
       communityResProducer.send({
-        topic: 'community_response',
+        topic: "community_response",
         messages: [
           {
             value: JSON.stringify({
               id,
               status: 500,
-              data: 'Server error',
+              data: "Server error",
             }),
           },
         ],
@@ -357,13 +357,13 @@ communityHandler.addVote = async (id, params, body, user) => {
     }
   } else {
     communityResProducer.send({
-      topic: 'community_response',
+      topic: "community_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'user already vote',
+            data: "user already vote",
           }),
         },
       ],

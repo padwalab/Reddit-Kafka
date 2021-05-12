@@ -101,7 +101,7 @@ commentHandler.deleteComment = async (id, params, body) => {
 // @route POST api/comment/vote
 // @desc add vote for a comment
 // @access Private
-commentHandler.addVote = async (id, params, body) => {
+commentHandler.addVote = async (id, params, body, user) => {
   const { commentId, vote, userId } = body;
   let result = {};
   try {

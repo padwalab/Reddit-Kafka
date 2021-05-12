@@ -28,6 +28,7 @@
     "http": "^0.0.1-security",
     "jsonwebtoken": "^8.5.1",
     "kafkajs": "^1.15.0",
+    "lodash": "^4.17.21",
     "mongoose": "^5.12.6",
     "morgan": "^1.10.0",
     "mysql2": "^2.2.5",
