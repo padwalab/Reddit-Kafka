@@ -1,67 +1,16 @@
-import dotenv from "dotenv";
-import Community from "../models/Community.js";
-import { sqlDB } from "../config/queries.js";
-import { findFor } from "../../utils/createNestedObject.js";
-import _ from "lodash";
+import dotenv from 'dotenv';
+import Community from '../models/Community.js';
+import { sqlDB } from '../config/queries.js';
 
-import { communityHomeResProducer } from "../kafka/producers/communityHomeResProducer.js";
-import { communityHomeReqConsumer } from "../kafka/consumers/communityHomeReqConsumer.js";
+import _ from 'lodash';
+
+import { communityHomeResProducer } from '../kafka/producers/communityHomeResProducer.js';
+import { communityHomeReqConsumer } from '../kafka/consumers/communityHomeReqConsumer.js';
 
 // userConsumer.start();
 communityHomeResProducer.connect();
 
-dotenv.config({ path: ".env" });
-
-export const getPosts = async (communityID, communityName, userId) => {
-  const allPosts = await sqlDB.getAllPosts(communityID);
-
-  const z = {};
-  const nestedObject = allPosts.map(async (post) => {
-    let obj = new Object();
-    obj["post"] = post;
-    obj.post["postVotes"] = await sqlDB.getPostVoteCount(post.id, userId);
-    const rcs = await sqlDB.getRootCommentIds(communityID, post.id);
-
-    if (rcs.length) {
-      const promiseComments = rcs.map(async (e) => {
-        obj.post[`cv_${e.id}`] = await sqlDB.getCommentVoteCount(e.id, userId);
-        return await sqlDB.getAllComments(e.id);
-      });
-      const allComments = await Promise.all(promiseComments);
-      obj.post["numberOfComments"] = allComments.flat(1).length;
-
-      const promiseSeq = rcs.map(async (e) => await sqlDB.getSequences(e.id));
-      const allSeq = await Promise.all(promiseSeq);
-
-      const childParent = allSeq.flat(1).map((e) => {
-        const p = e.seq.split(",");
-        return {
-          pid: e.postId,
-          id: e.id,
-          parent: parseInt(p[p.length - 2]) || null,
-        };
-      });
-      const groupedChildParentByPostId = _.mapValues(
-        _.groupBy(childParent, "pid"),
-        (cplist) => cplist.map((cp) => _.omit(cp, "pid"))
-      );
-      const groupedCommentsByPostId = _.mapValues(
-        _.groupBy(allComments.flat(1), "postId"),
-        (clist) => clist.map((comment) => _.omit(comment, "postId"))
-      );
-
-      obj.post["comments"] = findFor(
-        null,
-        groupedChildParentByPostId[post.id],
-        groupedCommentsByPostId[post.id]
-      );
-    }
-    return obj;
-  });
-
-  z[communityName] = await Promise.all(nestedObject);
-  return z;
-};
+dotenv.config({ path: '.env' });
 
 export let communityHomeHandler = {};
 
@@ -76,13 +25,13 @@ communityHomeHandler.requestToJOin = async (id, params, body, user) => {
     });
 
     communityHomeResProducer.send({
-      topic: "commhome_response",
+      topic: 'commhome_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 200,
-            data: "join request sent",
+            data: 'join request sent',
           }),
         },
       ],
@@ -91,13 +40,13 @@ communityHomeHandler.requestToJOin = async (id, params, body, user) => {
   } catch (error) {
     console.log(error);
     communityHomeResProducer.send({
-      topic: "commhome_response",
+      topic: 'commhome_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: "Server error",
+            data: 'Server error',
           }),
         },
       ],
@@ -111,28 +60,44 @@ communityHomeHandler.requestToJOin = async (id, params, body, user) => {
 // @access Private
 communityHomeHandler.getCommunityInfo = async (id, params, body, user) => {
   try {
-    const myCommunity = await Community.findById(params.communityId);
-    console.log(myCommunity.communityName);
-    const sub = myCommunity.subscribers.includes(user.id);
-    let buttonDisplay;
-    if (sub) {
-      buttonDisplay = "Leave";
-    } else {
-      const join = myCommunity.joinRequests.includes(user.id);
-      if (join) {
-        buttonDisplay = "Waiting For Approval";
+    const myCommunity = await Community.findById(params.communityId).populate({
+      path: 'creatorID',
+      select: ['firstName'],
+    });
+    let buttonDisplay = '';
+
+    if (
+      params.userId !== 'null' &&
+      String(myCommunity.creatorID.id) !== params.userId
+    ) {
+      console.log('here');
+      const sub = myCommunity.subscribers.includes(params.userId);
+
+      if (sub) {
+        buttonDisplay = 'Leave';
       } else {
-        buttonDisplay = "Join";
+        const join = myCommunity.joinRequests.includes(params.userId);
+        if (join) {
+          buttonDisplay = 'Waiting For Approval';
+        } else {
+          buttonDisplay = 'Join';
+        }
       }
     }
-    const posts = await getPosts(
-      params.communityId,
-      myCommunity.communityName,
-      user.id
-    );
+    const posts = await sqlDB.getAllPosts(params.communityId);
+    const nestedObject = posts.map(async (post) => {
+      let obj = new Object();
+      obj['post'] = post;
+      obj.post['postVotes'] = await sqlDB.getPostVoteCount(
+        post.id,
+        params.userId
+      );
+      return obj;
+    });
+    const allPosts = await Promise.all(nestedObject);
 
     communityHomeResProducer.send({
-      topic: "commhome_response",
+      topic: 'commhome_response',
       messages: [
         {
           value: JSON.stringify({
@@ -141,6 +106,7 @@ communityHomeHandler.getCommunityInfo = async (id, params, body, user) => {
             data: {
               id: myCommunity.id,
               communityName: myCommunity.communityName,
+              creatorName: myCommunity.creatorID.firstName,
               description: myCommunity.description,
               postsCount: myCommunity.posts.length,
               createdDate: myCommunity.createdDate,
@@ -150,37 +116,22 @@ communityHomeHandler.getCommunityInfo = async (id, params, body, user) => {
               downvotes: myCommunity.downvotes.length,
               rules: myCommunity.rules,
               buttonDisplay,
-              posts,
+              posts: allPosts,
             },
           }),
         },
       ],
     });
-
-    // res.json({
-    //   id: myCommunity.id,
-    //   communityName: myCommunity.communityName,
-    //   description: myCommunity.description,
-    //   postsCount: myCommunity.posts.length,
-    //   createdDate: myCommunity.createdDate,
-    //   subscribersCount: myCommunity.subscribers.length,
-    //   images: myCommunity.images,
-    //   upvotes: myCommunity.upvotes.length,
-    //   downvotes: myCommunity.downvotes.length,
-    //   rules: myCommunity.rules,
-    //   buttonDisplay,
-    //   posts,
-    // });
   } catch (error) {
     console.log(error);
     communityHomeResProducer.send({
-      topic: "commhome_response",
+      topic: 'commhome_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: "Server error",
+            data: 'Server error',
           }),
         },
       ],
@@ -200,13 +151,13 @@ communityHomeHandler.leaveCommunity = async (id, params, body, user) => {
     });
 
     communityHomeResProducer.send({
-      topic: "commhome_response",
+      topic: 'commhome_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 200,
-            data: "left from community",
+            data: 'left from community',
           }),
         },
       ],
@@ -215,13 +166,13 @@ communityHomeHandler.leaveCommunity = async (id, params, body, user) => {
   } catch (error) {
     console.log(error);
     communityHomeResProducer.send({
-      topic: "commhome_response",
+      topic: 'commhome_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: "Server error",
+            data: 'Server error',
           }),
         },
       ],
