@@ -52,23 +52,23 @@ communityHandler.create = async (id, params, body, user, files) => {
       newCommunity.description = description;
     }
 
-    if (files.length) {
-      const files = files;
+    if (files) {
+      // const files = files;
 
-      const locationPromises = files.map(async (item) => {
-        let myFile = item.originalname.split(".");
-        let fileType = myFile[myFile.length - 1];
-        let params = {
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: `${uuid()}.${fileType}`,
-          Body: item.buffer,
-        };
+      // const locationPromises = files.map(async (item) => {
+      //   let myFile = item.originalname.split(".");
+      //   let fileType = myFile[myFile.length - 1];
+      //   let params = {
+      //     Bucket: process.env.AWS_BUCKET_NAME,
+      //     Key: `${uuid()}.${fileType}`,
+      //     Body: item.buffer,
+      //   };
 
-        const resp = await S3.upload(params).promise();
-        return resp.Key;
-      });
-      const simageLinks = await Promise.all(locationPromises);
-      newCommunity.images = imageLinks;
+      //   const resp = await S3.upload(params).promise();
+      //   return resp.Key;
+      // });
+      // const imageLinks = await Promise.all(locationPromises);
+      newCommunity.images = files;
     }
 
     await newCommunity.save();

@@ -19,7 +19,7 @@ export let postHandler = {};
 postHandler.addPost = async (id, params, body, user, files) => {
   let { communityId, content, title, type } = body;
   try {
-    if (files) {
+    if (files.length) {
       content = files;
       const locationPromises = content.map(async (item) => {
         let myFile = item.originalname.split(".");

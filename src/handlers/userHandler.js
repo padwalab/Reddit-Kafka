@@ -301,17 +301,17 @@ userHandler.updateProfile = async (id, params, body, user, file) => {
       userFields.password = await bcrypt.hash(newPassword, salt);
     }
     if (file) {
-      const myFile = file.originalname.split('.');
-      const fileType = myFile[myFile.length - 1];
+      // const myFile = file.originalname.split('.');
+      // const fileType = myFile[myFile.length - 1];
 
-      const params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `${uuid()}.${fileType}`,
-        Body: file.buffer,
-      };
-      const data = await S3.upload(params).promise();
+      // const params = {
+      //   Bucket: process.env.AWS_BUCKET_NAME,
+      //   Key: `${uuid()}.${fileType}`,
+      //   Body: file.buffer,
+      // };
+      // const data = await S3.upload(params).promise();
 
-      userFields.profilePicture = data.Key;
+      userFields.profilePicture = file;
     }
     if (userFound) {
       const updatedUser = await User.findByIdAndUpdate(
