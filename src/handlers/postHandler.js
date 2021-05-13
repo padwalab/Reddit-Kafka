@@ -16,25 +16,25 @@ export let postHandler = {};
 // @route POST api/post
 // @desc add post in a community
 // @access Private
-postHandler.addPost = async (id, params, body, user, files) => {
+postHandler.addPost = async (id, params, body, user) => {
   let { communityId, content, title, type } = body;
   try {
-    if (files.length) {
-      content = files;
-      const locationPromises = content.map(async (item) => {
-        let myFile = item.originalname.split(".");
-        let fileType = myFile[myFile.length - 1];
-        let params = {
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: `${uuid()}.${fileType}`,
-          Body: item.buffer,
-        };
-        const resp = await S3.upload(params).promise();
-        return resp.Key;
-      });
-      const contentPromises = await Promise.all(locationPromises);
-      content = contentPromises.join();
-    }
+    // if (files.length > 0) {
+    //   content = files;
+    //   const locationPromises = content.map(async (item) => {
+    //     let myFile = item.originalname.split(".");
+    //     let fileType = myFile[myFile.length - 1];
+    //     let params = {
+    //       Bucket: process.env.AWS_BUCKET_NAME,
+    //       Key: `${uuid()}.${fileType}`,
+    //       Body: item.buffer,
+    //     };
+    //     const resp = await S3.upload(params).promise();
+    //     return resp.Key;
+    //   });
+    //   const contentPromises = await Promise.all(locationPromises);
+    //   content = contentPromises.join();
+    // }
     const result = await sqlDB.addPost(
       user.id,
       communityId,
@@ -49,7 +49,7 @@ postHandler.addPost = async (id, params, body, user, files) => {
         { $push: { posts: result.insertId } },
         { safe: true, upsert: true }
       );
-      const post = await sqlDB.getRecentPost();
+      const post = await sqlDB.getRecentPost(result.insertId);
       postResProducer.send({
         topic: "post_response",
         messages: [

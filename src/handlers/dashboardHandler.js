@@ -1,5 +1,5 @@
 import Community from '../models/Community.js';
-import { getPosts } from './communityHomeHandler.js';
+// import { getPosts } from './communityHomeHandler.js';
 import { findFor } from '../../utils/createNestedObject.js';
 import { dashboardResProducer } from '../kafka/producers/dashboardResProducer.js';
 import { dashboardReqConsumer } from '../kafka/consumers/dashboardReqConsumer.js';

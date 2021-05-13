@@ -18,8 +18,7 @@ postReqConsumer.run({
           data.id,
           data.params,
           data.body,
-          data.user,
-          data.files
+          data.user
         );
         break;
       case "deletePost":
