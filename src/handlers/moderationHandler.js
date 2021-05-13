@@ -1,11 +1,11 @@
-import dotenv from "dotenv";
-import Community from "../models/Community.js";
-import { sqlDB } from "../config/queries.js";
-import User from "../models/User.js";
-dotenv.config({ path: ".env" });
+import dotenv from 'dotenv';
+import Community from '../models/Community.js';
+import { sqlDB } from '../config/queries.js';
+import User from '../models/User.js';
+dotenv.config({ path: '.env' });
 
-import { moderationResProducer } from "../kafka/producers/moderationResProducer.js";
-import { moderationReqConsumer } from "../kafka/consumers/moderationReqConsumer.js";
+import { moderationResProducer } from '../kafka/producers/moderationResProducer.js';
+import { moderationReqConsumer } from '../kafka/consumers/moderationReqConsumer.js';
 
 // userConsumer.start();
 moderationResProducer.connect();
@@ -20,20 +20,22 @@ moderationHandler.getListOfCommunities = async (id, params, body, user) => {
     const myCommunities = await Community.find(
       { creatorID: user.id },
       { communityName: 1, joinRequests: 1, subscribers: 1 }
-    )
-      .populate({
-        path: "joinRequests subscribers",
-        select: [
-          "firstName",
-          "lastName",
-          "email",
-          "profilePicture",
-          "gender",
-          "aboutMe",
-          "communities",
-        ],
-      })
-      .populate({ path: "communities", select: ["communityName"] });
+    ).populate({
+      path: 'joinRequests subscribers',
+      select: [
+        'firstName',
+        'lastName',
+        'email',
+        'profilePicture',
+        'gender',
+        'aboutMe',
+        'communities',
+      ],
+      populate: {
+        path: 'communities',
+        select: ['communityName'],
+      },
+    });
 
     const communityInfo = myCommunities.map((community) => {
       return {
@@ -46,7 +48,7 @@ moderationHandler.getListOfCommunities = async (id, params, body, user) => {
     });
 
     moderationResProducer.send({
-      topic: "moderation_response",
+      topic: 'moderation_response',
       messages: [
         {
           value: JSON.stringify({
@@ -61,13 +63,13 @@ moderationHandler.getListOfCommunities = async (id, params, body, user) => {
   } catch (error) {
     console.log(error);
     moderationResProducer.send({
-      topic: "invite_response",
+      topic: 'invite_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: "Server error",
+            data: 'Server error',
           }),
         },
       ],
@@ -94,13 +96,13 @@ moderationHandler.acceptJoinReqs = async (id, params, body, user) => {
       }
     );
     moderationResProducer.send({
-      topic: "moderation_response",
+      topic: 'moderation_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 200,
-            data: "join requests accepted",
+            data: 'join requests accepted',
           }),
         },
       ],
@@ -109,13 +111,13 @@ moderationHandler.acceptJoinReqs = async (id, params, body, user) => {
   } catch (error) {
     console.log(error);
     moderationResProducer.send({
-      topic: "moderation_response",
+      topic: 'moderation_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: "Server error",
+            data: 'Server error',
           }),
         },
       ],
@@ -151,13 +153,13 @@ moderationHandler.deleteUserFromCommunities = async (
     await sqlDB.deleteCommentsByUserId(userID, id_list);
 
     moderationResProducer.send({
-      topic: "moderation_response",
+      topic: 'moderation_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 200,
-            data: "user removed from selected communities",
+            data: 'user removed from selected communities',
           }),
         },
       ],
@@ -166,13 +168,13 @@ moderationHandler.deleteUserFromCommunities = async (
   } catch (error) {
     console.log(error);
     moderationResProducer.send({
-      topic: "moderation_response",
+      topic: 'moderation_response',
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: "Server error",
+            data: 'Server error',
           }),
         },
       ],

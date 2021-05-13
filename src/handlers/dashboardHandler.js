@@ -1,6 +1,6 @@
 import Community from '../models/Community.js';
-import { getPosts } from './communityHomeHandler.js';
 import { findFor } from '../../utils/createNestedObject.js';
+import { sqlDB } from '../config/queries.js';
 import { dashboardResProducer } from '../kafka/producers/dashboardResProducer.js';
 import { dashboardReqConsumer } from '../kafka/consumers/dashboardReqConsumer.js';
 import _ from 'lodash';
@@ -67,9 +67,12 @@ export const getPosts = async (communityID, communityName, userId) => {
 dashboardHandler.getAllPosts = async (id, params, body, user) => {
   try {
     const myCommunities = await Community.find(
-      { creatorID: user.id },
+      {
+        $or: [{ creatorID: user.id }, { subscribers: user.id }],
+      },
       { id: 1, communityName: 1 }
     );
+
     const rootPromises = myCommunities.map(async (ele) => {
       return getPosts(ele.id, ele.communityName, user.id);
     });

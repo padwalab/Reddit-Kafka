@@ -149,7 +149,9 @@ communityHomeHandler.leaveCommunity = async (id, params, body, user) => {
     await Community.findByIdAndUpdate(communityId, {
       $pull: { subscribers: user.id },
     });
-
+    await User.findByIdAndUpdate(user.id, {
+      $pull: { communities: communityId },
+    });
     communityHomeResProducer.send({
       topic: 'commhome_response',
       messages: [
