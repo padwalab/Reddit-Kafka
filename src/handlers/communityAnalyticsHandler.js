@@ -49,6 +49,7 @@ communityAnalyticsHandler.analytics = async (id, params, user) => {
     const userMaxPost = await Promise.all(maxPost);
 
     postsInfo.sort((a, b) => b.postInfo.upvotes - a.postInfo.upvotes);
+    postInfo.sort((a, b) => b.postCount - a.postCount);
     userMaxPost.sort((c, d) => d.postCount - c.postCount);
     communityInfo.sort((e, f) => f.userCount - e.userCount);
     if (postsInfo.length > 10) {

@@ -1,6 +1,7 @@
 import Invite from "../models/Invite.js";
 import Community from "../models/Community.js";
-import mongoose from 'mongoose';
+import User from "../models/User.js";
+import mongoose from "mongoose";
 
 import { inviteResProducer } from "../kafka/producers/inviteResProducer.js";
 import { inviteReqConsumer } from "../kafka/consumers/inviteReqConsumer.js";
@@ -14,35 +15,35 @@ export let inviteHandler = {};
 // @desc Invite user
 // @access Public
 inviteHandler.inviteUser = async (id, params, body, user) => {
+  console.log("body", JSON.stringify(body));
   const { communityId, userIds, date } = body;
-  const resultPromises = userIds.map(async(userId) => {
+  const resultPromises = userIds.map(async (userId) => {
     let obj = await Community.find({
-      _id: communityId, subscribers: mongoose.Types.ObjectId(userId),
+      _id: communityId,
+      subscribers: mongoose.Types.ObjectId(userId),
     });
-    if(obj.length > 0){
+    if (obj.length > 0) {
       return {
-        id:userId,
-        message:`User is already part of the community.`
+        id: userId,
+        message: `User is already part of the community.`,
+      };
+    } else {
+      const findInvite = await Invite.findOne({ communityId, userId });
+      if (findInvite) {
+        return {
+          id: userId,
+          message: `Invite is already sent to the user.`,
+        };
+      } else {
+        const invite = new Invite({ communityId, userId, date });
+        invite.save();
+        return {
+          id: userId,
+          message: `Invite sent to user.`,
+        };
       }
     }
-    else{
-    const findInvite = await Invite.findOne({ communityId, userId });
-    if(findInvite){
-      return {
-        id:userId,
-        message : `Invite is already sent to the user.`
-      }
-    }
-    else{
-      const invite = new Invite({ communityId, userId, date });
-      invite.save();
-      return {
-        id:userId,
-        message:`Invite sent to user.`
-      }
-    }
-  }
-})
+  });
   const result = await Promise.all(resultPromises);
   inviteResProducer.send({
     topic: "invite_response",
@@ -63,9 +64,12 @@ inviteHandler.inviteUser = async (id, params, body, user) => {
 // @desc List of invites sent by community moderator to users
 // @access Public
 inviteHandler.loadCommunityInvites = async (id, params, body, user) => {
-  const { communityId } = body;
+  const { communityId } = params;
 
-  let invites = await Invite.find({ communityId }).populate({ path: 'userId', select: ['firstName','lastName'] });
+  let invites = await Invite.find({ communityId }).populate({
+    path: "userId",
+    select: ["firstName", "lastName"],
+  });
   inviteResProducer.send({
     topic: "invite_response",
     messages: [
@@ -85,7 +89,10 @@ inviteHandler.loadCommunityInvites = async (id, params, body, user) => {
 // @desc List of invites received by user
 // @access Public
 inviteHandler.loadUserInvites = async (id, params, body, user) => {
-  let invites = await Invite.find({ userId: user.id }).populate({ path: 'communityId', select: ['communityName'] });
+  let invites = await Invite.find({ userId: user.id }).populate({
+    path: "communityId",
+    select: ["communityName"],
+  });
   inviteResProducer.send({
     topic: "invite_response",
     messages: [
@@ -114,6 +121,11 @@ inviteHandler.inviteAction = async (id, params, body, user) => {
     let obj = await Community.findByIdAndUpdate(
       communityId,
       { $addToSet: { subscribers: user.id } },
+      { new: true }
+    );
+    await User.findByIdAndUpdate(
+      user.id,
+      { $addToSet: { communities: communityId } },
       { new: true }
     );
     if (obj) {

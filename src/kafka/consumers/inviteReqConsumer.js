@@ -14,7 +14,7 @@ inviteReqConsumer.run({
     console.log({ ...data, topic });
     switch (data.action) {
       case "inviteUser":
-        inviteHandler.inviteAction(data.id, data.params, data.body, data.user);
+        inviteHandler.inviteUser(data.id, data.params, data.body, data.user);
         break;
       case "loadCommunityInvites":
         inviteHandler.loadCommunityInvites(
