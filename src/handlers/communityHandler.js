@@ -138,7 +138,7 @@ communityHandler.updateCommunity = async (id, params, body, files) => {
       let myFile = item.originalname.split(".");
       let fileType = myFile[myFile.length - 1];
       let params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
+        Bucket: "redditbucket10",
         Key: `${uuid()}.${fileType}`,
         Body: item.buffer,
       };

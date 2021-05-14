@@ -11,7 +11,7 @@ class Database {
   }
   _connect() {
     mongoose
-      .connect(process.env.mongoURI, {
+      .connect("mongodb+srv://reddit:redditdb@cluster0.oihwj.mongodb.net/myFirstDatabase?retryWrites=true&w=majority", {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useCreateIndex: true,
@@ -34,5 +34,5 @@ class Database {
   }
 }
 
-// module.exports = new Database();
+//module.exports = new Database();
 export default Database;

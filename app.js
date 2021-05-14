@@ -1,5 +1,6 @@
-import db from "./src/models/index.js";
+//import {db} from "./src/models/index.js";
 import { userHandler } from "./src/handlers/userHandler.js";
+import db from "./src/models/index.js";
 import { messageHandler } from "./src/handlers/messageHandler.js";
 import { communityHandler } from "./src/handlers/communityHandler.js";
 import { communitySearchHandler } from "./src/handlers/communitySearchHandler.js";
