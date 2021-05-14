@@ -302,6 +302,16 @@ sqlDB.getCommentVoteCount = (commentId, userId) => {
     );
   });
 };
+sqlDB.getPostByID = (postID) => {
+  return new Promise((resolve, reject) => {
+    db.query(`SELECT * FROM posts where id= ? `, [postID], (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      return resolve(result);
+    });
+  });
+};
 
 sqlDB.getPostVoteCount = (postId, userId) => {
   let voteCount = {};

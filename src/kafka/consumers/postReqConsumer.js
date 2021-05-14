@@ -25,6 +25,9 @@ postReqConsumer.run({
       case "voteCount":
         postHandler.voteCount(data.id, data.params, data.body, data.user);
         break;
+      case "getPostById":
+        postHandler.getPostById(data.id, data.params, data.body);
+        break;
     }
   },
 });
