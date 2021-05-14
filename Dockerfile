@@ -4,6 +4,8 @@ WORKDIR /usr/src/reddit-kafka-backend
 
 COPY package*.json ./
 
+COPY . .
+
 RUN npm install kafkajs
 RUN npm install
 RUN npm install lodash
