@@ -14,12 +14,7 @@ postReqConsumer.run({
     console.log({ ...data, topic });
     switch (data.action) {
       case "addPost":
-        postHandler.addPost(
-          data.id,
-          data.params,
-          data.body,
-          data.user
-        );
+        postHandler.addPost(data.id, data.params, data.body, data.user);
         break;
       case "deletePost":
         postHandler.deletePost(data.id, data.params, data.body, data.user);
