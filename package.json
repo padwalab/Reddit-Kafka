@@ -2,6 +2,7 @@
   "name": "Reddit-Kafka",
   "version": "1.0.0",
   "description": "",
+  "type":"module",
   "main": "index.js",
   "scripts": {
     "start": "nodemon --exec babel-node app.js",

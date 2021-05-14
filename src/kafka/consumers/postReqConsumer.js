@@ -14,12 +14,7 @@ postReqConsumer.run({
     console.log({ ...data, topic });
     switch (data.action) {
       case "addPost":
-        postHandler.addPost(
-          data.id,
-          data.params,
-          data.body,
-          data.user
-        );
+        postHandler.addPost(data.id, data.params, data.body, data.user);
         break;
       case "deletePost":
         postHandler.deletePost(data.id, data.params, data.body, data.user);
@@ -29,6 +24,9 @@ postReqConsumer.run({
         break;
       case "voteCount":
         postHandler.voteCount(data.id, data.params, data.body, data.user);
+        break;
+      case "getPostById":
+        postHandler.getPostById(data.id, data.params, data.body);
         break;
     }
   },

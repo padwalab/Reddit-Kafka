@@ -2,9 +2,9 @@ import redis from "redis";
 import dotenv from "dotenv";
 dotenv.config({ path: ".env" });
 
-export const redisClient = redis.createClient(
-  process.env.REDIS_PORT,
-  process.env.REDIS_HOST
+export let redisClient = redis.createClient(
+  6379,
+  "redis_cache"
 );
 
 redisClient.on("connect", () => {

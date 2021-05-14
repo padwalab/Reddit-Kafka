@@ -1,14 +1,14 @@
-import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
-import jwt from 'jsonwebtoken';
-import { S3 } from '../config/s3.js';
-import uuid from 'uuid';
+import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
+import { S3 } from "../config/s3.js";
+import uuid from "uuid";
 
-import User from '../models/User.js';
-dotenv.config({ path: '.env' });
+import User from "../models/User.js";
+dotenv.config({ path: ".env" });
 
-import { userResProducer } from '../kafka/producers/userResProducer.js';
-import { userReqConsumer } from '../kafka/consumers/userReqConsumer.js';
+import { userResProducer } from "../kafka/producers/userResProducer.js";
+import { userReqConsumer } from "../kafka/consumers/userReqConsumer.js";
 
 // userConsumer.start();
 userResProducer.connect();
@@ -54,36 +54,31 @@ userHandler.register = async (id, params, body) => {
       },
     };
     // Return jsonwebtoken
-    jwt.sign(
-      payload,
-      process.env.SECRET,
-      { expiresIn: 360000 },
-      (err, token) => {
-        if (err) throw err;
-        userResProducer.send({
-          topic: 'users_response',
-          messages: [
-            {
-              value: JSON.stringify({
-                id,
-                status: 200,
-                data: { token: `Bearer ${token}` },
-              }),
-            },
-          ],
-        });
-        // res.json({ token: `Bearer ${token}` });
-      }
-    );
+    jwt.sign(payload, "redditsecret", { expiresIn: 360000 }, (err, token) => {
+      if (err) throw err;
+      userResProducer.send({
+        topic: "users_response",
+        messages: [
+          {
+            value: JSON.stringify({
+              id,
+              status: 200,
+              data: { token: `Bearer ${token}` },
+            }),
+          },
+        ],
+      });
+      // res.json({ token: `Bearer ${token}` });
+    });
   } catch (error) {
     userResProducer.send({
-      topic: 'users_response',
+      topic: "users_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],
@@ -99,7 +94,7 @@ userHandler.loadUser = (id, params, body, user) => {
   try {
     // res.json(req.user);
     userResProducer.send({
-      topic: 'users_response',
+      topic: "users_response",
       messages: [
         {
           value: JSON.stringify({
@@ -114,13 +109,13 @@ userHandler.loadUser = (id, params, body, user) => {
     console.error(error.message);
     // res.status(500).send("Server Error");
     userResProducer.send({
-      topic: 'users_response',
+      topic: "users_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],
@@ -146,7 +141,7 @@ userHandler.login = async (id, params, body) => {
       //   ],
       // });
       return userResProducer.send({
-        topic: 'users_response',
+        topic: "users_response",
         messages: [
           {
             value: JSON.stringify({
@@ -155,7 +150,7 @@ userHandler.login = async (id, params, body) => {
               data: {
                 errors: [
                   {
-                    msg: 'Whoops! We couldn’t find an account for that email address and password',
+                    msg: "Whoops! We couldn’t find an account for that email address and password",
                   },
                 ],
               },
@@ -170,7 +165,7 @@ userHandler.login = async (id, params, body) => {
 
     if (!matchPwd) {
       return userResProducer.send({
-        topic: 'users_response',
+        topic: "users_response",
         messages: [
           {
             value: JSON.stringify({
@@ -179,7 +174,7 @@ userHandler.login = async (id, params, body) => {
               data: {
                 errors: [
                   {
-                    msg: 'Whoops! We couldn’t find an account for that email address and password',
+                    msg: "Whoops! We couldn’t find an account for that email address and password",
                   },
                 ],
               },
@@ -197,37 +192,32 @@ userHandler.login = async (id, params, body) => {
     };
 
     // Return jsonwebtoken
-    jwt.sign(
-      payload,
-      process.env.SECRET,
-      { expiresIn: 360000 },
-      (err, token) => {
-        if (err) throw err;
-        // res.json({ token: `Bearer ${token}` });
-        userResProducer.send({
-          topic: 'users_response',
-          messages: [
-            {
-              value: JSON.stringify({
-                id,
-                status: 200,
-                data: { token: `Bearer ${token}` },
-              }),
-            },
-          ],
-        });
-      }
-    );
+    jwt.sign(payload, "redditsecret", { expiresIn: 360000 }, (err, token) => {
+      if (err) throw err;
+      // res.json({ token: `Bearer ${token}` });
+      userResProducer.send({
+        topic: "users_response",
+        messages: [
+          {
+            value: JSON.stringify({
+              id,
+              status: 200,
+              data: { token: `Bearer ${token}` },
+            }),
+          },
+        ],
+      });
+    });
   } catch (error) {
     // res.status(500).send("Server error");
     userResProducer.send({
-      topic: 'users_response',
+      topic: "users_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],
@@ -278,7 +268,7 @@ userHandler.updateProfile = async (id, params, body, user, file) => {
 
       if (!matchPwd) {
         userResProducer.send({
-          topic: 'users_response',
+          topic: "users_response",
           messages: [
             {
               value: JSON.stringify({
@@ -287,7 +277,7 @@ userHandler.updateProfile = async (id, params, body, user, file) => {
                 data: {
                   errors: [
                     {
-                      msg: 'Incorrect Password',
+                      msg: "Incorrect Password",
                     },
                   ],
                 },
@@ -328,7 +318,7 @@ userHandler.updateProfile = async (id, params, body, user, file) => {
 
       // res.json(updatedUser);
       userResProducer.send({
-        topic: 'users_response',
+        topic: "users_response",
         messages: [
           {
             value: JSON.stringify({
@@ -344,13 +334,13 @@ userHandler.updateProfile = async (id, params, body, user, file) => {
     console.log(error);
     // res.status(500).send("Server error");
     userResProducer.send({
-      topic: 'users_response',
+      topic: "users_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],
@@ -367,10 +357,10 @@ userHandler.getProfileByUserId = async (id, params, body) => {
       password: 0,
       date: 0,
       messages: 0,
-    }).populate({ path: 'communities', select: ['communityName'] });
+    }).populate({ path: "communities", select: ["communityName"] });
     // res.json(profile);
     userResProducer.send({
-      topic: 'users_response',
+      topic: "users_response",
       messages: [
         {
           value: JSON.stringify({
@@ -385,13 +375,13 @@ userHandler.getProfileByUserId = async (id, params, body) => {
     console.error(error.message);
     // res.status(500).send("Server Error");
     userResProducer.send({
-      topic: 'users_response',
+      topic: "users_response",
       messages: [
         {
           value: JSON.stringify({
             id,
             status: 500,
-            data: 'Server error',
+            data: "Server error",
           }),
         },
       ],

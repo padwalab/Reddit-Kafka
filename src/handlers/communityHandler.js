@@ -138,7 +138,7 @@ communityHandler.updateCommunity = async (id, params, body, files) => {
       let myFile = item.originalname.split(".");
       let fileType = myFile[myFile.length - 1];
       let params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
+        Bucket: "redditbucket10",
         Key: `${uuid()}.${fileType}`,
         Body: item.buffer,
       };
@@ -284,61 +284,66 @@ communityHandler.deleteCommunity = async (id, params) => {
 // @route POST api/mycommunity/vote
 // @desc vote for a community
 // @access Private
+//
 communityHandler.addVote = async (id, params, body, user) => {
   const { communityId, vote } = body;
   let obj = await Community.find({
+    _id: communityId,
     downvotes: mongoose.Types.ObjectId(user.id),
   });
   let obj2 = await Community.find({
+    _id: communityId,
     upvotes: mongoose.Types.ObjectId(user.id),
   });
   if (obj.length === 0 && obj2.length === 0) {
     try {
       if (vote === 1) {
-        await Community.findByIdAndUpdate(
+        const community = await Community.findByIdAndUpdate(
           communityId,
           { $push: { upvotes: user.id } },
-          { new: true, upsert: true },
-          function (err, community) {
-            if (err) return console.log(err);
-            communityResProducer.send({
-              topic: "community_response",
-              messages: [
-                {
-                  value: JSON.stringify({
-                    id,
-                    status: 200,
-                    data: community,
-                  }),
-                },
-              ],
-            });
-            // res.json(community);
-          }
+          { new: true, upsert: true }
         );
+        // function (err, community) {
+        // if (err) return console.log(err);
+        communityResProducer.send({
+          topic: "community_response",
+          messages: [
+            {
+              value: JSON.stringify({
+                id,
+                status: 200,
+                data: community,
+              }),
+            },
+          ],
+        });
+        // res.json(community);
+        // }
+        // );
       } else {
-        await Community.findByIdAndUpdate(
+        const community = await Community.findByIdAndUpdate(
           communityId,
           { $push: { downvotes: user.id } },
-          { new: true, upsert: true },
-          function (err, community) {
-            if (err) return console.log(err);
-            communityResProducer.send({
-              topic: "community_response",
-              messages: [
-                {
-                  value: JSON.stringify({
-                    id,
-                    status: 200,
-                    data: community,
-                  }),
-                },
-              ],
-            });
-            // res.json(community);
-          }
+          { new: true, upsert: true }
         );
+        // function (err, community) {
+        // if (err) return console.log(err);
+        communityResProducer.send({
+          topic: "community_response",
+          messages: [
+            {
+              value: JSON.stringify({
+                id,
+                status: 200,
+                data: community,
+              }),
+            },
+          ],
+        });
+        // res.json(community);
       }
+      // );
+      // }
     } catch (error) {
       console.log(error);
       communityResProducer.send({
@@ -371,3 +376,4 @@ communityHandler.addVote = async (id, params, body, user) => {
     // res.status(500).send("user already voted");
   }
 };
+

@@ -4,7 +4,8 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env" });
 import { S3 } from "../config/s3.js";
 import uuid from "uuid";
-
+import _ from "lodash";
+import { findFor } from '../../utils/createNestedObject.js';
 import { postResProducer } from "../kafka/producers/postResProducer.js";
 import { postReqConsumer } from "../kafka/consumers/postReqConsumer.js";
 
@@ -188,6 +189,90 @@ postHandler.voteCount = async (id, params, body, user) => {
     });
     // res.status(200).send(result);
   } catch (error) {
+    postResProducer.send({
+      topic: "post_response",
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            status: 500,
+            data: "Server error",
+          }),
+        },
+      ],
+    });
+    // res.status(200).send("Server error");
+  }
+};
+
+// @route GET api/post/:id
+// @desc get post along with comments given postID
+// @access Private
+postHandler.getPostById = async (id, params, body) => {
+  try {
+    let obj = [];
+    obj.push({ post: await sqlDB.getPostByID(params.id) });
+    obj.push({
+      postVotes: await sqlDB.getPostVoteCount(params.id, params.userID),
+    });
+    const rcs = await sqlDB.getRootCommentIds(params.communityID, params.id);
+
+    if (rcs.length) {
+      let cv = new Object();
+      const promiseComments = rcs.map(async (e) => {
+        obj.push({
+          [e.id]: await sqlDB.getCommentVoteCount(e.id, params.userID),
+        });
+
+        return await sqlDB.getAllComments(e.id);
+      });
+      const allComments = await Promise.all(promiseComments);
+      obj.push({ numberOfComments: allComments.flat(1).length });
+
+      const promiseSeq = rcs.map(async (e) => await sqlDB.getSequences(e.id));
+      const allSeq = await Promise.all(promiseSeq);
+
+      const childParent = allSeq.flat(1).map((e) => {
+        const p = e.seq.split(",");
+        return {
+          pid: e.postId,
+          id: e.id,
+          parent: parseInt(p[p.length - 2]) || null,
+        };
+      });
+      const groupedChildParentByPostId = _.mapValues(
+        _.groupBy(childParent, "pid"),
+        (cplist) => cplist.map((cp) => _.omit(cp, "pid"))
+      );
+      const groupedCommentsByPostId = _.mapValues(
+        _.groupBy(allComments.flat(1), "postId"),
+        (clist) => clist.map((comment) => _.omit(comment, "postId"))
+      );
+
+      obj.push({
+        comments: findFor(
+          null,
+          groupedChildParentByPostId[params.id],
+          groupedCommentsByPostId[params.id]
+        ),
+      });
+    }
+
+    postResProducer.send({
+      topic: "post_response",
+      messages: [
+        {
+          value: JSON.stringify({
+            id,
+            status: 200,
+            data: obj,
+          }),
+        },
+      ],
+    });
+    // res.json(obj);
+  } catch (error) {
+    console.log(error);
     postResProducer.send({
       topic: "post_response",
       messages: [
